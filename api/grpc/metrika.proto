@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package metrika;
+option go_package = "./pb";
+
+
+service MetrikaService {
+  rpc PushHitsToBQ(PushLogRequest) returns (PushLogResponse);
+  rpc PushVisitsToBQ(PushLogRequest) returns (PushLogResponse);
+  rpc GetCounters(GetCountersRequest) returns (GetCountersResponse);
+}
+
+message PushLogRequest {
+  BqConfig bqConfig = 1;
+  CsConfig csConfig = 2;
+  MetrikaConfig metrikaConfig = 3;
+}
+
+message PushLogResponse {
+  bool success = 1;
+}
+
+message BqConfig{
+  string project_id = 1;
+  string dataset_id = 2;
+  string table_id = 3;
+  string service_key = 4; // Название файла сервисного ключа
+}
+
+message CsConfig{
+  string bucket_name = 1;
+}
+
+message MetrikaConfig {
+  string yandexToken = 1;
+  int64 counterId = 2;
+  Period period = 3;
+}
+
+message Period {
+  string dateFrom = 1;
+  string dateTo = 2;
+}
+
+message GetCountersRequest{
+  string yandexToken = 1;
+}
+
+message GetCountersResponse {
+  string counters = 1;
+}
