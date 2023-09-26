@@ -14,10 +14,10 @@ func NewCounterPolicy(srv service.CounterService) *CounterPolicy {
 
 }
 
-func (mp CounterPolicy) GetCounters(ctx context.Context) error {
-	err := mp.Service.GetCounters(ctx)
+func (mp CounterPolicy) GetCounters(ctx context.Context) (string, error) {
+	counters, err := mp.Service.GetCounters(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return counters, nil
 }

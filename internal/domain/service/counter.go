@@ -6,7 +6,7 @@ import (
 )
 
 type CounterRepository interface {
-	GetCounters(ctx context.Context) error
+	GetCounters(ctx context.Context) (string, error)
 }
 
 type CounterService struct {
@@ -21,11 +21,11 @@ func NewCounterService(metrika CounterRepository, logger *zerolog.Logger) *Count
 	}
 }
 
-func (ms *CounterService) GetCounters(ctx context.Context) error {
-	err := ms.metrika.GetCounters(ctx)
+func (ms *CounterService) GetCounters(ctx context.Context) (string, error) {
+	counters, err := ms.metrika.GetCounters(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return counters, nil
 }

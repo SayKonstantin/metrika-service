@@ -12,6 +12,7 @@ import (
 )
 
 func (s Server) GetCounters(ctx context.Context, req *pb.GetCountersRequest) (*pb.GetCountersResponse, error) {
+	s.logger.Info().Msg("GetCounters")
 	metrikaClient := sdk.Client{
 		Tr:    &http.Client{Timeout: 20 * time.Minute},
 		Token: req.YandexToken,
@@ -19,10 +20,10 @@ func (s Server) GetCounters(ctx context.Context, req *pb.GetCountersRequest) (*p
 	metrikaRepo := metrika.NewCounterRepository(&metrikaClient, s.logger)
 	srv := service.NewCounterService(metrikaRepo, s.logger)
 	metrikaPolicy := mp.NewCounterPolicy(*srv)
-	err := metrikaPolicy.GetCounters(ctx)
+	counters, err := metrikaPolicy.GetCounters(ctx)
 	if err != nil {
-		return &pb.GetCountersResponse{Counters: "false"}, err
+		return &pb.GetCountersResponse{Counters: ""}, err
 	}
-	return &pb.GetCountersResponse{Counters: ""}, nil
+	return &pb.GetCountersResponse{Counters: counters}, nil
 
 }

@@ -2,8 +2,10 @@ package metrika
 
 import (
 	"context"
+	"fmt"
 	sdk "github.com/mg-realcom/metrika-sdk"
 	"github.com/rs/zerolog"
+	"strings"
 )
 
 type CounterRepository struct {
@@ -18,13 +20,15 @@ func NewCounterRepository(client *sdk.Client, logger *zerolog.Logger) *CounterRe
 	}
 }
 
-func (l *CounterRepository) GetCounters(ctx context.Context) error {
+func (l *CounterRepository) GetCounters(ctx context.Context) (string, error) {
 	counters, err := l.client.GetCounters(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
+	var res = []string{"counterID | counterName"}
 	for _, c := range counters {
-		l.logger.Info().Msgf("counter: %v", c)
+		counter := fmt.Sprintf("%v - %v", c.Id, c.Name)
+		res = append(res, counter)
 	}
-	return nil
+	return strings.Join(res, "\n"), nil
 }
