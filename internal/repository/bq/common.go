@@ -12,7 +12,7 @@ import (
 
 const DeleteByDateQuery = "DELETE `%s.%s` WHERE %s >= '%s' AND %s <= '%s'"
 
-func CreateTable(ctx context.Context, table *bigquery.Table, fieldPartition *string, fieldClustering *[]string, schemaDTO any) error {
+func CreateTable(ctx context.Context, table *bigquery.Table, fieldPartition *string, fieldClustering []string, schemaDTO any) error {
 	schema, err := bigquery.InferSchema(schemaDTO)
 	if err != nil {
 		return fmt.Errorf("bigquery.InferSchema: %w", err)
@@ -29,7 +29,7 @@ func CreateTable(ctx context.Context, table *bigquery.Table, fieldPartition *str
 	}
 	if fieldClustering != nil {
 		clustering := bigquery.Clustering{
-			Fields: *fieldClustering,
+			Fields: fieldClustering,
 		}
 		metadata.Clustering = &clustering
 	}
@@ -55,20 +55,21 @@ func DeleteByDateColumn(ctx context.Context, bqClient *bigquery.Client, table *b
 	return nil
 }
 
-func SendFromCS(ctx context.Context, table *bigquery.Table, bucket string, object string) error {
-	//schema, err := bigquery.InferSchema(ReportSchema{})
-	//if err != nil {
-	//	return fmt.Errorf("bigquery.InferSchema: %w", err)
-	//}
+func SendFromCS(ctx context.Context, table *bigquery.Table, bucket, object string, schemaDTO any) error {
+	schema, err := bigquery.InferSchema(schemaDTO)
+	if err != nil {
+		return fmt.Errorf("bigquery.InferSchema: %w", err)
+	}
 	filePath := strings.Split(object, "/")
 	gcsRef := bigquery.NewGCSReference(fmt.Sprintf("gs://%s/%s", bucket, filePath[len(filePath)-1]))
 	gcsRef.SourceFormat = bigquery.CSV
-	gcsRef.AutoDetect = true
-	gcsRef.CSVOptions.FieldDelimiter = "|"
+	//gcsRef.AutoDetect = true
+	gcsRef.Schema = schema
+	gcsRef.CSVOptions.FieldDelimiter = "\t"
 	gcsRef.SkipLeadingRows = 1
 	loader := table.LoaderFrom(gcsRef)
 	loader.WriteDisposition = bigquery.WriteAppend
-	loader.CreateDisposition = bigquery.CreateNever
+	loader.CreateDisposition = bigquery.CreateIfNeeded
 	job, err := loader.Run(ctx)
 	if err != nil {
 		return fmt.Errorf("loader error: %w", err)

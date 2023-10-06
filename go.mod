@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/bigquery v1.52.0
 	cloud.google.com/go/storage v1.30.1
 	github.com/ilyakaznacheev/cleanenv v1.5.0
-	github.com/mg-realcom/metrika-sdk v0.1.6
+	github.com/mg-realcom/metrika-sdk v0.1.8
 	github.com/nikoksr/notify v0.41.0
 	github.com/rs/zerolog v1.30.0
 	golang.org/x/sync v0.3.0

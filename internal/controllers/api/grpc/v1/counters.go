@@ -25,5 +25,4 @@ func (s Server) GetCounters(ctx context.Context, req *pb.GetCountersRequest) (*p
 		return &pb.GetCountersResponse{Counters: ""}, err
 	}
 	return &pb.GetCountersResponse{Counters: counters}, nil
-
 }

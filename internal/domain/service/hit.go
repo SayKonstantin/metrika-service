@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/SayKonstantin/metrika-service/internal/repository/bq"
 	"github.com/SayKonstantin/metrika-service/internal/repository/metrika"
 	"github.com/rs/zerolog"
 	"os"
@@ -21,7 +22,7 @@ type HitCsRepository interface {
 type HitBqRepository interface {
 	SendFromCS(ctx context.Context, bucket string, object string) (err error)
 	DeleteByDateColumn(ctx context.Context, dateFrom, dateTo string) (err error)
-	CreateTable(ctx context.Context, schema any) (err error)
+	CreateTable(ctx context.Context, fieldPartition string, fieldClustering []string, schema any) (err error)
 	TableExists(ctx context.Context) (err error)
 }
 
@@ -43,18 +44,28 @@ func NewHitService(metrika HitRepository, cs HitCsRepository, bq HitBqRepository
 	}
 }
 
-func (ms *HitService) GetHits(ctx context.Context) error {
+func (hs *HitService) GetHits(ctx context.Context) error {
+	hs.logger.Trace().Msg("PushHitsToBQ")
 	layout := "2006-01-02"
-	startDate, err := time.Parse(layout, ms.dates.DateFrom)
+	startDate, err := time.Parse(layout, hs.dates.DateFrom)
 	if err != nil {
 		return fmt.Errorf("Can`t parse date: %w", err)
 	}
-	endDate, err := time.Parse(layout, ms.dates.DateTo)
+	endDate, err := time.Parse(layout, hs.dates.DateTo)
 	if err != nil {
 		return fmt.Errorf("Can`t parse date: %w", err)
 	}
 	unix1 := startDate.Unix()
 	unix2 := endDate.Unix()
+	err = hs.bq.TableExists(ctx)
+	if err != nil {
+		err = hs.bq.CreateTable(ctx, "date", nil, &bq.HitSchema{})
+		hs.logger.Info().Msgf("Table created")
+		if err != nil {
+			return fmt.Errorf("can`t create table: %w", err)
+		}
+	}
+
 	for i := unix1; i <= unix2; i += 86400 {
 		t1 := time.Unix(i, 0)
 		dt := i + 86400
@@ -62,11 +73,17 @@ func (ms *HitService) GetHits(ctx context.Context) error {
 			dt = unix2
 		}
 		actualDate := fmt.Sprintf("%d-%02d-%02d", t1.Year(), t1.Month(), t1.Day())
-		files, err := ms.metrika.PushHits(ctx, actualDate, actualDate)
+		files, err := hs.metrika.PushHits(ctx, actualDate, actualDate)
 		if err != nil {
 			return err
 		}
-		err = ms.PushHitsToBQ(ctx, files)
+
+		err = hs.bq.DeleteByDateColumn(ctx, hs.dates.DateFrom, hs.dates.DateTo)
+		if err != nil {
+			return err
+		}
+
+		err = hs.PushHitsToBQ(ctx, files)
 		if err != nil {
 			return err
 		}
@@ -75,17 +92,18 @@ func (ms *HitService) GetHits(ctx context.Context) error {
 	return nil
 }
 
-func (ms HitService) PushHitsToBQ(ctx context.Context, files []string) error {
+func (hs HitService) PushHitsToBQ(ctx context.Context, files []string) error {
 	for _, file := range files {
-		err := ms.cs.SendFile(ctx, file)
+		err := hs.cs.SendFile(ctx, file)
 		if err != nil {
 			return fmt.Errorf("can`t send file to CS: %w", err)
 		}
-		bucket, err := ms.cs.GetBucket(ctx)
+		bucket, err := hs.cs.GetBucket(ctx)
 		if err != nil {
 			return err
 		}
-		err = ms.bq.SendFromCS(ctx, bucket, file)
+
+		err = hs.bq.SendFromCS(ctx, bucket, file)
 		if err != nil {
 			return fmt.Errorf("can`t send file from CS: %w", err)
 		}

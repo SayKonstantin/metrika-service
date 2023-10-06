@@ -2,6 +2,7 @@ package metrika
 
 import (
 	"context"
+	"fmt"
 	sdk "github.com/mg-realcom/metrika-sdk"
 	"github.com/rs/zerolog"
 )
@@ -15,19 +16,24 @@ type hitRepository struct {
 }
 
 func NewHitRepository(client *sdk.Client, attachmentDir, fields, source string, logger *zerolog.Logger) *hitRepository {
+	repoLogger := logger.With().Str("metrikaRepository", "hit").Logger()
 	return &hitRepository{
 		client:        client,
 		attachmentDir: attachmentDir,
 		fields:        fields,
 		source:        source,
-		logger:        logger,
+		logger:        &repoLogger,
 	}
 }
 
 func (l *hitRepository) PushHits(ctx context.Context, dateFrom, dateTo string) ([]string, error) {
+
 	reqID, err := l.client.CreateLog(ctx, dateFrom, dateTo, l.fields, l.source)
 	if err != nil {
 		return nil, err
+	}
+	if reqID == 0 {
+		return nil, fmt.Errorf("Hits: GetRequestID Error")
 	}
 	parts, err := l.client.GetParts(ctx, reqID)
 	if err != nil {
@@ -37,6 +43,7 @@ func (l *hitRepository) PushHits(ctx context.Context, dateFrom, dateTo string) (
 	if err != nil {
 		return nil, err
 	}
+	l.logger.Info().Msg("Hits have been downloaded")
 	_, err = l.client.DeleteLog(ctx, int(l.client.CounterId), reqID)
 	if err != nil {
 		return nil, err

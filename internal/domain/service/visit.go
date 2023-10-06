@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/SayKonstantin/metrika-service/internal/repository/bq"
 	"github.com/SayKonstantin/metrika-service/internal/repository/metrika"
 	"github.com/rs/zerolog"
 	"os"
@@ -21,7 +22,7 @@ type VisitCsRepository interface {
 type VisitBqRepository interface {
 	SendFromCS(ctx context.Context, bucket string, object string) (err error)
 	DeleteByDateColumn(ctx context.Context, dateFrom, dateTo string) (err error)
-	CreateTable(ctx context.Context, schema any) (err error)
+	CreateTable(ctx context.Context, fieldPartition string, fieldClustering []string, schema any) (err error)
 	TableExists(ctx context.Context) (err error)
 }
 
@@ -43,18 +44,28 @@ func NewVisitService(metrika VisitRepository, cs VisitCsRepository, bq VisitBqRe
 	}
 }
 
-func (ms *VisitService) GetVisits(ctx context.Context) error {
+func (vs *VisitService) GetVisits(ctx context.Context) error {
+	vs.logger.Trace().Msg("VisitsToBQ")
+
 	layout := "2006-01-02"
-	startDate, err := time.Parse(layout, ms.dates.DateFrom)
+	startDate, err := time.Parse(layout, vs.dates.DateFrom)
 	if err != nil {
 		return fmt.Errorf("Can`t parse date: %w", err)
 	}
-	endDate, err := time.Parse(layout, ms.dates.DateTo)
+	endDate, err := time.Parse(layout, vs.dates.DateTo)
 	if err != nil {
 		return fmt.Errorf("Can`t parse date: %w", err)
 	}
 	unix1 := startDate.Unix()
 	unix2 := endDate.Unix()
+	err = vs.bq.TableExists(ctx)
+	if err != nil {
+		err = vs.bq.CreateTable(ctx, "date", nil, &bq.VisitSchema{})
+		if err != nil {
+			return fmt.Errorf("can`t create table: %w", err)
+		}
+		vs.logger.Info().Msg("Visits Table created")
+	}
 	for i := unix1; i <= unix2; i += 86400 {
 		t1 := time.Unix(i, 0)
 		dt := i + 86400
@@ -62,11 +73,17 @@ func (ms *VisitService) GetVisits(ctx context.Context) error {
 			dt = unix2
 		}
 		actualDate := fmt.Sprintf("%d-%02d-%02d", t1.Year(), t1.Month(), t1.Day())
-		files, err := ms.metrika.PushLog(ctx, actualDate, actualDate)
+		files, err := vs.metrika.PushLog(ctx, actualDate, actualDate)
 		if err != nil {
 			return err
 		}
-		err = ms.PushVisitsToBQ(ctx, files)
+
+		err = vs.bq.DeleteByDateColumn(ctx, vs.dates.DateFrom, vs.dates.DateTo)
+		if err != nil {
+			return err
+		}
+
+		err = vs.PushVisitsToBQ(ctx, files)
 		if err != nil {
 			return err
 		}
@@ -75,17 +92,17 @@ func (ms *VisitService) GetVisits(ctx context.Context) error {
 	return nil
 }
 
-func (ms VisitService) PushVisitsToBQ(ctx context.Context, files []string) error {
+func (vs VisitService) PushVisitsToBQ(ctx context.Context, files []string) error {
 	for _, file := range files {
-		err := ms.cs.SendFile(ctx, file)
+		err := vs.cs.SendFile(ctx, file)
 		if err != nil {
 			return fmt.Errorf("can`t send file to CS: %w", err)
 		}
-		bucket, err := ms.cs.GetBucket(ctx)
+		bucket, err := vs.cs.GetBucket(ctx)
 		if err != nil {
 			return err
 		}
-		err = ms.bq.SendFromCS(ctx, bucket, file)
+		err = vs.bq.SendFromCS(ctx, bucket, file)
 		if err != nil {
 			return fmt.Errorf("can`t send file from CS: %w", err)
 		}

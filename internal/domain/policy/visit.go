@@ -14,7 +14,7 @@ func NewVisitPolicy(srv service.VisitService) *VisitPolicy {
 
 }
 
-func (mp VisitPolicy) PushVisits(ctx context.Context) error {
+func (mp VisitPolicy) PushVisitsToBQ(ctx context.Context) error {
 	err := mp.Service.GetVisits(ctx)
 	if err != nil {
 		return err

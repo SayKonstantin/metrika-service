@@ -14,7 +14,7 @@ func NewHitPolicy(srv service.HitService) *HitPolicy {
 
 }
 
-func (mp HitPolicy) PushHits(ctx context.Context) error {
+func (mp HitPolicy) PushHitsToBQ(ctx context.Context) error {
 	err := mp.Service.GetHits(ctx)
 	if err != nil {
 		return err

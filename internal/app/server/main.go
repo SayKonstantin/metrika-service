@@ -36,7 +36,7 @@ func NewApp(cfg *config.ServerConfig, logger *zerolog.Logger, notify notify.Noti
 func (a App) startGRPC(server pb.MetrikaServiceServer) error {
 	a.logger.Info().Msg(fmt.Sprintf("GRPC запущен на %s:%d", a.cfg.GRPC.Ip, a.cfg.GRPC.Port))
 	if a.cfg.IsEnabled {
-		err := a.Notify.Send(context.Background(), "Metrika Service", fmt.Sprintf("gRPC запущен на %v:%v", a.cfg.GRPC.Ip, a.cfg.GRPC.Port))
+		err := a.Notify.Send(context.Background(), "Metrika Service", fmt.Sprintf("Запущен на %v порту", a.cfg.GRPC.Port))
 		if err != nil {
 			a.logger.Fatal().Err(err).Msg("ошибка отправки уведомления")
 		}
