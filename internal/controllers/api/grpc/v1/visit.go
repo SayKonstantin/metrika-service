@@ -59,7 +59,7 @@ func (s Server) PushVisitsToBQ(ctx context.Context, req *pb.PushLogRequest) (*pb
 	srv := service.NewVisitService(metrikaRepo, csRepo, bqRepo, dates, &methodLogger)
 	metrikaPolicy := mp.NewVisitPolicy(*srv)
 	methodLogger.Info().Msg(msgMethodStarted)
-	err = metrikaPolicy.PushVisits(ctx)
+	err = metrikaPolicy.PushVisitsToBQ(ctx)
 	if err != nil {
 		s.notifier.Send(ctx, "Metrika Service", fmt.Sprintf("PushVisits: Error: %s", err))
 		return &pb.PushLogResponse{Success: false}, err
