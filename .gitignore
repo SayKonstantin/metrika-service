@@ -22,5 +22,4 @@ go.work
 
 # misc
 .idea
-go.sum
 .DS_Store
