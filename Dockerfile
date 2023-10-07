@@ -1,7 +1,7 @@
 FROM golang:alpine AS builder
 WORKDIR /build
 COPY . .
-RUN go build -o direct-service /build/cmd/server/main.go
+RUN go build -o metrika /build/cmd/server/main.go
 
 FROM alpine
 WORKDIR /app
