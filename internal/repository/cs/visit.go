@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/rs/zerolog"
-	"time"
 )
 
 type visitRepository struct {
@@ -28,9 +27,11 @@ func NewVisitRepository(bucketName, projectId string, client *storage.Client, lo
 func (vr visitRepository) SendFile(ctx context.Context, filename string) error {
 	vr.logger.Info().Msgf("SendFile to CS: %v", filename)
 	_, err := vr.bucket.Attrs(ctx)
-
 	if err != nil {
-		err = vr.bucket.Create(ctx, vr.projectId, &storage.BucketAttrs{RetentionPolicy: &storage.RetentionPolicy{RetentionPeriod: 5 * 24 * time.Hour}})
+		err = vr.bucket.Create(ctx, vr.projectId,
+			&storage.BucketAttrs{Lifecycle: storage.Lifecycle{Rules: []storage.LifecycleRule{
+				{Action: storage.LifecycleAction{Type: storage.DeleteAction},
+					Condition: storage.LifecycleCondition{AgeInDays: 3}}}}})
 		if err != nil {
 			return fmt.Errorf("bucket creation error: %w", err)
 		}

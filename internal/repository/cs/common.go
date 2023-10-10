@@ -22,10 +22,6 @@ func SendFile(ctx context.Context, bucket *storage.BucketHandle, filename string
 		}
 	}(f)
 
-	//var timeout = 20 * time.Minute
-	//ctxWithTimeout, _ := context.WithTimeout(ctx, timeout)
-	//defer cancel()
-
 	items := strings.Split(filename, "/")
 	o := bucket.Object(items[len(items)-1])
 	o = o.If(storage.Conditions{DoesNotExist: true})
