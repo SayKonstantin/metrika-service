@@ -77,8 +77,9 @@ func (vs *VisitService) GetVisits(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		vs.logger.Info().Msgf("Visits from %s have been downloaded", actualDate)
 
-		err = vs.bq.DeleteByDateColumn(ctx, vs.dates.DateFrom, vs.dates.DateTo)
+		err = vs.bq.DeleteByDateColumn(ctx, actualDate, actualDate)
 		if err != nil {
 			return err
 		}
