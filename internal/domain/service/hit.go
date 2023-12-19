@@ -77,8 +77,9 @@ func (hs *HitService) GetHits(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		hs.logger.Info().Msgf("Hits from %s have been downloaded", actualDate)
 
-		err = hs.bq.DeleteByDateColumn(ctx, hs.dates.DateFrom, hs.dates.DateTo)
+		err = hs.bq.DeleteByDateColumn(ctx, actualDate, actualDate)
 		if err != nil {
 			return err
 		}
