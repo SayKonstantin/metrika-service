@@ -238,7 +238,7 @@ type ParsedParamsKey10 struct {
 }
 
 type VisitSchema struct {
-	VisitID                     bigquery.NullInt64    `bigquery:"visitID"`
+	VisitID                     bigquery.NullString   `bigquery:"visitID"`
 	CounterID                   bigquery.NullInt64    `bigquery:"counterID"`
 	WatchIDS                    bigquery.NullString   `bigquery:"watchIDs"`
 	Date                        bigquery.NullDate     `bigquery:"date"`
@@ -367,7 +367,7 @@ type VisitSchema struct {
 }
 
 type HitSchema struct {
-	WatchID                  bigquery.NullInt64    `bigquery:"watchID"`
+	WatchID                  bigquery.NullString   `bigquery:"watchID"`
 	CounterID                bigquery.NullInt64    `bigquery:"counterID"`
 	Date                     bigquery.NullDate     `bigquery:"date"`
 	DateTime                 bigquery.NullDateTime `bigquery:"dateTime"`

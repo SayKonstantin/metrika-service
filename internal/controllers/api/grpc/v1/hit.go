@@ -61,9 +61,9 @@ func (s Server) PushHitsToBQ(ctx context.Context, req *pb.PushLogRequest) (*pb.P
 	err = metrikaPolicy.PushHitsToBQ(ctx)
 	if err != nil {
 		methodLogger.Error().Err(err).Msg(msgErrMethod)
+		methodLogger.Error().Err(err).Msg(msgErrMethod)
 		s.notifier.Send(ctx, "Metrika Service", fmt.Sprintf("PushHitsToBQ: execution error: %s", err))
 		return &pb.PushLogResponse{Success: false}, err
 	}
 	return &pb.PushLogResponse{Success: true}, nil
-
 }

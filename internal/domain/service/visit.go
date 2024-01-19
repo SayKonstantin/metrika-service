@@ -72,6 +72,7 @@ func (vs *VisitService) GetVisits(ctx context.Context) error {
 		if dt > unix2 {
 			dt = unix2
 		}
+
 		actualDate := fmt.Sprintf("%d-%02d-%02d", t1.Year(), t1.Month(), t1.Day())
 		files, err := vs.metrika.PushLog(ctx, actualDate, actualDate)
 		if err != nil {
@@ -94,14 +95,14 @@ func (vs *VisitService) GetVisits(ctx context.Context) error {
 }
 
 func (vs VisitService) PushVisitsToBQ(ctx context.Context, files []string) error {
+	bucket, err := vs.cs.GetBucket(ctx)
+	if err != nil {
+		return err
+	}
 	for _, file := range files {
 		err := vs.cs.SendFile(ctx, file)
 		if err != nil {
 			return fmt.Errorf("can`t send file to CS: %w", err)
-		}
-		bucket, err := vs.cs.GetBucket(ctx)
-		if err != nil {
-			return err
 		}
 		err = vs.bq.SendFromCS(ctx, bucket, file)
 		if err != nil {
