@@ -63,12 +63,12 @@ func SendFromCS(ctx context.Context, table *bigquery.Table, bucket, object strin
 	filePath := strings.Split(object, "/")
 	gcsRef := bigquery.NewGCSReference(fmt.Sprintf("gs://%s/%s", bucket, filePath[len(filePath)-1]))
 	gcsRef.SourceFormat = bigquery.CSV
-	//gcsRef.AutoDetect = true
 	gcsRef.Schema = schema
 	gcsRef.CSVOptions.FieldDelimiter = "\t"
 	gcsRef.SkipLeadingRows = 1
 	loader := table.LoaderFrom(gcsRef)
 	loader.WriteDisposition = bigquery.WriteAppend
+
 	loader.CreateDisposition = bigquery.CreateIfNeeded
 	job, err := loader.Run(ctx)
 	if err != nil {

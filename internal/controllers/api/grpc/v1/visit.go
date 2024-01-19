@@ -18,7 +18,7 @@ import (
 )
 
 func (s Server) PushVisitsToBQ(ctx context.Context, req *pb.PushLogRequest) (*pb.PushLogResponse, error) {
-	methodLogger := s.logger.With().Str("method", "PushHitsToBQ").Logger()
+	methodLogger := s.logger.With().Str("method", "PushVisitsToBQ").Logger()
 	methodLogger.Info().Msg(msgMethodPrepared)
 	defer methodLogger.Info().Msg(msgMethodFinished)
 
@@ -61,6 +61,7 @@ func (s Server) PushVisitsToBQ(ctx context.Context, req *pb.PushLogRequest) (*pb
 	methodLogger.Info().Msg(msgMethodStarted)
 	err = metrikaPolicy.PushVisitsToBQ(ctx)
 	if err != nil {
+		methodLogger.Error().Err(err).Msg(msgErrMethod)
 		s.notifier.Send(ctx, "Metrika Service", fmt.Sprintf("PushVisits: Error: %s", err))
 		return &pb.PushLogResponse{Success: false}, err
 	}
