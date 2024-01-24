@@ -94,16 +94,15 @@ func (hs *HitService) GetHits(ctx context.Context) error {
 }
 
 func (hs HitService) PushHitsToBQ(ctx context.Context, files []string) error {
+	bucket, err := hs.cs.GetBucket(ctx)
+	if err != nil {
+		return err
+	}
 	for _, file := range files {
 		err := hs.cs.SendFile(ctx, file)
 		if err != nil {
 			return fmt.Errorf("can`t send file to CS: %w", err)
 		}
-		bucket, err := hs.cs.GetBucket(ctx)
-		if err != nil {
-			return err
-		}
-
 		err = hs.bq.SendFromCS(ctx, bucket, file)
 		if err != nil {
 			return fmt.Errorf("can`t send file from CS: %w", err)
